@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Deteksi Buah Tomat - YOLOv8</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success shadow">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="#">🍅 Tomato Detector</a>
+      </div>
+    </nav>
+
+    <div class="container py-5 text-center">
+      <h1 class="mb-3 text-success">Deteksi Buah Tomat dengan YOLOv8</h1>
+
+      <!-- Input IP Kamera -->
+      <div class="card shadow-lg mx-auto mb-4" style="max-width: 600px">
+        <div class="card-header bg-success text-white fw-bold">
+          🔗 Set Kamera DroidCam
+        </div>
+        <div class="card-body">
+          <input
+            type="text"
+            id="cameraIp"
+            class="form-control mb-3"
+            placeholder="contoh: 192.168.1.7"
+          />
+          <button id="setCameraBtn" class="btn btn-success">Set Kamera</button>
+        </div>
+      </div>
+
+      <!-- Stream -->
+      <div class="card shadow-lg mx-auto" style="max-width: 900px">
+        <div class="card-header bg-success text-white fw-bold">
+          📱 Kamera Stream
+        </div>
+        <div class="card-body text-center">
+          <img
+            id="videoHP"
+            src=""
+            class="img-fluid rounded d-none"
+            alt="Phone Camera Stream"
+          />
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <button id="startBtn" class="btn btn-success btn-lg me-2" disabled>
+          ▶ Start Kamera
+        </button>
+        <button id="stopBtn" class="btn btn-danger btn-lg" disabled>
+          ■ Stop Kamera
+        </button>
+      </div>
+
+      <div class="mt-4">
+        <h4 class="text-success">📊 Statistik Deteksi</h4>
+        <p class="mb-1">FPS: <span id="fps">0</span></p>
+      </div>
+    </div>
+
+    <footer class="bg-success text-white text-center py-3 mt-5">
+      <p class="mb-0">© 2025 Deteksi Tomat | By: Pagri</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      const videoHP = document.getElementById("videoHP");
+      const startBtn = document.getElementById("startBtn");
+      const stopBtn = document.getElementById("stopBtn");
+      const setCameraBtn = document.getElementById("setCameraBtn");
+      const cameraIpInput = document.getElementById("cameraIp");
+
+      let cameraSet = false;
+
+      setCameraBtn.addEventListener("click", () => {
+        const ip = cameraIpInput.value.trim();
+        if (!ip) return alert("Masukkan IP kamera DroidCam!");
+
+        const url = `http://${ip}:4747/video`;
+
+        fetch("/set_camera", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.status === "ok") {
+              alert("Kamera berhasil di-set: " + data.camera_url);
+              startBtn.disabled = false;
+              cameraSet = true;
+            } else {
+              alert("Error: " + data.message);
+            }
+          })
+          .catch((err) => console.error(err));
+      });
+
+      startBtn.addEventListener("click", () => {
+        if (!cameraSet) return alert("Set kamera dulu!");
+        videoHP.src = "/video";
+        videoHP.classList.remove("d-none");
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+      });
+
+      stopBtn.addEventListener("click", () => {
+        videoHP.src = "";
+        videoHP.classList.add("d-none");
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+      });
+
+      setInterval(() => {
+        fetch("/stats")
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("fps").innerText = data.fps;
+          });
+      }, 1000);
+    </script>
+  </body>
+</html>
